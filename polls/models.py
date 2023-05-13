@@ -2,11 +2,19 @@ from django.db import models
 from django.utils import timezone
 import datetime
 from django.contrib import admin
+
+from django.utils.text import slugify
 # Create your models here.
 
 class Question(models.Model):
     question_text = models.CharField(max_length=200)
+    slug = models.SlugField(unique=True, blank=True)
     pub_date = models.DateTimeField("date published")
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.question_text)
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return self.question_text
     @admin.display(
