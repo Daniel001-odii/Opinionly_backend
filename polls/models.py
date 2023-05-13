@@ -4,12 +4,14 @@ import datetime
 from django.contrib import admin
 
 from django.utils.text import slugify
+from django.contrib.auth.models import User
+
 # Create your models here.
 
 class Question(models.Model):
     question_text = models.CharField(max_length=200)
     slug = models.SlugField(unique=True, blank=True)
-    pub_date = models.DateTimeField("date published")
+    pub_date = models.DateTimeField("date published",auto_now_add=True)
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.question_text)
@@ -28,6 +30,9 @@ class Question(models.Model):
 
 
 class Choice(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+
+    upvotes = models.ManyToManyField(User, related_name='upvoted_choices', blank=True)
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     choice_text = models.CharField(max_length=200)
     votes = models.IntegerField(default=0)

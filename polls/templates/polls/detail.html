@@ -7,29 +7,65 @@
     <title>Document</title>
 </head>
 <body>
-    <h1>
+<!--    <h1>
        {{ question.question_text }}
     </h1>
     <ul>
         {% for choice in question.choice_set.all %}
-            <li>{{ choice.choice_text }} <br/><small>{{ choice.votes }}% likes this</small></li>
+  <li>{{ choice.choice_text }} <br/><small>
+    {{ choice.votes }}% likes this
+</small></li>
         {% endfor %}
     </ul>
-
+-->
 
     
-    <form action="{% url 'polls:vote' question.id %}" method="post">
+   <!-- <form action="{% url 'polls:vote' question.id %}" method="post">
         {% csrf_token %}
         <fieldset>
-            <legend><h1>{{ question.question_text }}</h1></legend>
-            {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
-            {% for choice in question.choice_set.all %}
-                <input type="radio" name="choice" id="choice{{ forloop.counter }}" value="{{ choice.id }}">
-                <label for="choice{{ forloop.counter }}">{{ choice.choice_text }}</label><br>
+ <legend><h1>{{ question.question_text }}</h1></legend>
+            {% if error_message %}
+ <p><strong>{{ error_message }}</strong></p>{% endif %}
+  {% for choice in question.choice_set.all %}
+  <input type="radio" name="choice" id="choice{{ forloop.counter }}" value="{{ choice.id }}">
+  <label for="choice{{ forloop.counter }}">
+    {{ choice.choice_text }} | 
+    {{ choice.votes }}% likes this
+  </label><br>
             {% endfor %}
         </fieldset>
-        <input type="submit" value="Vote">
-    </form>
+ <input type="submit" value="Vote">
+    </form>-->
+    
+    <a href="{% url 'polls:index' %}">home</a>
+    
+<!-- polls/poll_detail.html -->
+
+<h1>{{ question.question_text }}</h1>
+
+<ul>
+  {% for choice in question.choice_set.all %}
+    <li>{{ choice.choice_text }} - {{ choice.votes }} votes
+      <form method="post" action="{% url 'polls:detail' question.id %}">
+        {% csrf_token %}
+        <input type="hidden" name="choice" value="{{ choice.id }}">
+        <button type="submit">Upvote</button>
+      </form>
+    </li>
+  {% endfor %}
+</ul>
+
+<!-- Add Choice Form -->
+<form method="post" action="{% url 'polls:detail' question.id %}">
+  {% csrf_token %}
+  {{ choice_form.as_p }}
+  <button type="submit">Add Choice</button>
+</form>
+
+{% for message in messages %}
+  <p>{{ message }}</p>
+{% endfor %}
+
 
 
 
