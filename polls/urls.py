@@ -12,4 +12,6 @@ urlpatterns = [
     path("<int:question_id>/vote/", views.vote, name="vote"),
     path("post/question/", views.questionPost, name="questionPost"),
     path("question/<int:question_id>/", views.poll_detail, name="detail"),
+    path("register", views.register_request, name="register"),
+    path("login", views.login_request, name="login"),
 ]

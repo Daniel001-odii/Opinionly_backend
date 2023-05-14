@@ -1,11 +1,15 @@
 from django.http import HttpResponseRedirect
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
 from django.views import generic
 from django.utils import timezone
 from .models import Choice, Question
 from django.contrib import messages
 from django.db.models import Max
+from django.db.models import F
+from .forms import NewUserForm
+from django.contrib.auth import login, authenticate
+from django.contrib.auth.forms import AuthenticationForm #add this
 
 
 #trying forms.....
@@ -25,9 +29,15 @@ class IndexView(generic.ListView):
         return Question.objects.filter(pub_date__lte=timezone.now()).order_by("-pub_date")[:5]
 
 def poll_list(request):
-    questions = Question.objects.annotate(max_votes=Max('choice__votes')).filter(choice__votes=F('max_votes'))
+    latest_question_list = Question.objects.annotate(max_votes=Max('choice__votes')).filter(choice__votes=F('max_votes'))
+    def get_queryset(self):
+        """
+        Return the last five published questions (not including those set to be
+        published in the future).
+        """
+        return Question.objects.filter(pub_date__lte=timezone.now()).order_by("-pub_date")[:5]
     
-    return render(request, 'polls/index.html', {'questions': questions})
+    return render(request, 'polls/index.html', {'latest_question_list': latest_question_list})
 
 
 
@@ -117,6 +127,7 @@ def questionPost(request):
             if choice_form.is_valid():
                 choice = choice_form.save(commit=False)
                 choice.question = question
+                choice.user = request.user
                 choice.save()
                 return HttpResponseRedirect(reverse("polls:index"))
                 
@@ -127,3 +138,42 @@ def questionPost(request):
         choice_form = ChoiceForm()
     
     return render(request, 'polls/post.html', {'question_form': question_form, 'choice_form': choice_form})
+
+
+
+
+#from django.shortcuts import  render, redirect
+
+#from django.contrib import messages
+
+def register_request(request):
+    if request.method == "POST":
+      form = NewUserForm(request.POST)
+      if form.is_valid():
+        user = form.save()
+        login(request, user)
+        messages.success(request, "Registration successful." )
+        return redirect("polls:login")
+      messages.error(request, "Unsuccessful registration. Invalid information.")
+    form = NewUserForm()
+    return render (request=request, template_name="polls/register.html", context={"register_form":form})
+
+
+
+def login_request(request):
+	if request.method == "POST":
+		form = AuthenticationForm(request, data=request.POST)
+		if form.is_valid():
+			username = form.cleaned_data.get('username')
+			password = form.cleaned_data.get('password')
+			user = authenticate(username=username, password=password)
+			if user is not None:
+				login(request, user)
+				messages.info(request, f"You are now logged in as {username}.")
+				return redirect("polls:index")
+			else:
+				messages.error(request,"Invalid username or password.")
+		else:
+			messages.error(request,"Invalid username or password.")
+	form = AuthenticationForm()
+	return render(request=request, template_name="polls/login.html", context={"login_form":form})

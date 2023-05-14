@@ -19,11 +19,13 @@
     {% if latest_question_list %}
     <ul>
     {% for question in latest_question_list %}
-     <li><a href="{% url 'polls:detail' question.id %}">{{ question.question_text }}</a></li>
-   
+  <li><a href="{% url 'polls:detail' question.id %}">
+    {{ question.question_text }}
+  </a></li>
+ <small>asked by: {{ question.posted_by }}</small>
     
-        <small>{% for choice in question.choice_set.all %}
-            <p>{{ choice.choice_text }} {{ choice.votes }}%</p>
+  <small>{% for choice in question.choice_set.all %}
+      <p>{{ choice.choice_text }} {{ choice.votes }}%</p>
             {% endfor %}
         </small>
 
@@ -34,11 +36,13 @@
     </ul>
     {% else %}
         <p>No polls are available.</p>
+<a href="{% url 'polls:questionPost' %}">
+  post a question 
+</a>
     {% endif %}
 
 
-<p>test</p>
-<!-- polls/poll_list.html -->
+<!-- polls/poll_list.html -
 
 {% for question in latest_question_list %}
   <h1>{{ question.question_text }}</h1>
@@ -51,7 +55,7 @@
     {% endfor %}
   </ul>
 {% endfor %}
-
+-->
 
 
 

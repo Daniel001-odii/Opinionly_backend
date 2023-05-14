@@ -9,6 +9,8 @@ from django.contrib.auth.models import User
 # Create your models here.
 
 class Question(models.Model):
+    posted_by = models.ForeignKey(User, on_delete=models.CASCADE, default = 1)
+
     question_text = models.CharField(max_length=200)
     slug = models.SlugField(unique=True, blank=True)
     pub_date = models.DateTimeField("date published",auto_now_add=True)
