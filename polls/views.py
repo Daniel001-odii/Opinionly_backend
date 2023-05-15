@@ -8,8 +8,15 @@ from django.contrib import messages
 from django.db.models import Max
 from django.db.models import F
 from .forms import NewUserForm
-from django.contrib.auth import login, authenticate
+from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.forms import AuthenticationForm #add this
+from django.db.models import Prefetch
+
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
+
+
+
 
 
 #trying forms.....
@@ -20,16 +27,30 @@ from .forms import QuestionForm, ChoiceForm
 class IndexView(generic.ListView):
     template_name = "polls/index.html"
     context_object_name = "latest_question_list"
+    
 
     def get_queryset(self):
         """
         Return the last five published questions (not including those set to be
         published in the future).
         """
-        return Question.objects.filter(pub_date__lte=timezone.now()).order_by("-pub_date")[:5]
+        queryset = Question.objects.filter(pub_date__lte=timezone.now()).order_by("-pub_date")
+        for question in queryset:
+            highest_voted_choice = question.choice_set.aggregate(Max('votes'))
+            highest_votes = highest_voted_choice['votes__max']
+            highest_voted_choices = question.choice_set.filter(votes=highest_votes)
+            question.highest_voted_choices = highest_voted_choices
+
+        return queryset
+
+        #return Question.objects.filter(pub_date__lte=timezone.now()).order_by("-pub_date")[:5]
+
+
 
 def poll_list(request):
     latest_question_list = Question.objects.annotate(max_votes=Max('choice__votes')).filter(choice__votes=F('max_votes'))
+    return render(request, 'polls/index.html', {'latest_question_list': latest_question_list})
+    
     def get_queryset(self):
         """
         Return the last five published questions (not including those set to be
@@ -37,10 +58,10 @@ def poll_list(request):
         """
         return Question.objects.filter(pub_date__lte=timezone.now()).order_by("-pub_date")[:5]
     
-    return render(request, 'polls/index.html', {'latest_question_list': latest_question_list})
+        
 
 
-
+@login_required
 def poll_detail(request, question_id):
     question = get_object_or_404(Question, pk=question_id)
     choice_form = ChoiceForm(request.POST or None)
@@ -73,6 +94,7 @@ def poll_detail(request, question_id):
                 selected_choice.votes += 1
                 selected_choice.save()
                 messages.success(request, "Upvote recorded successfully.")
+                
     
     return render(request, 'polls/detail.html', {
         'question': question,
@@ -90,6 +112,8 @@ class ResultsView(generic.DetailView):
     template_name = "polls/results.html"
 
 
+
+@login_required
 def vote(request, question_id):
     question = get_object_or_404(Question, pk=question_id)
     try:
@@ -115,7 +139,7 @@ def vote(request, question_id):
         
         
 
-
+@login_required
 def questionPost(request):
     if request.method == 'POST':
         question_form = QuestionForm(request.POST)
@@ -139,41 +163,4 @@ def questionPost(request):
     
     return render(request, 'polls/post.html', {'question_form': question_form, 'choice_form': choice_form})
 
-
-
-
-#from django.shortcuts import  render, redirect
-
-#from django.contrib import messages
-
-def register_request(request):
-    if request.method == "POST":
-      form = NewUserForm(request.POST)
-      if form.is_valid():
-        user = form.save()
-        login(request, user)
-        messages.success(request, "Registration successful." )
-        return redirect("polls:login")
-      messages.error(request, "Unsuccessful registration. Invalid information.")
-    form = NewUserForm()
-    return render (request=request, template_name="polls/register.html", context={"register_form":form})
-
-
-
-def login_request(request):
-	if request.method == "POST":
-		form = AuthenticationForm(request, data=request.POST)
-		if form.is_valid():
-			username = form.cleaned_data.get('username')
-			password = form.cleaned_data.get('password')
-			user = authenticate(username=username, password=password)
-			if user is not None:
-				login(request, user)
-				messages.info(request, f"You are now logged in as {username}.")
-				return redirect("polls:index")
-			else:
-				messages.error(request,"Invalid username or password.")
-		else:
-			messages.error(request,"Invalid username or password.")
-	form = AuthenticationForm()
-	return render(request=request, template_name="polls/login.html", context={"login_form":form})
+	

@@ -8,56 +8,102 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     
-
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <link rel="stylesheet" href="{% static 'polls/style.css' %}">
 </head>
 <body>
-<a href="{% url 'polls:questionPost' %}">
-  post a question 
-</a>
+  {% if user.is_authenticated %}
+  <p>Welcome, {{ user.username }}!</p>
+    <p>Email: {{ user.email }}</p>
+  <a href="{% url 'accounts:logout' %}">Logout</a>
+
+  {% else %}
+    <a href="{% url 'accounts:login' %}">Login</a> | 
+    <a href="{% url 'accounts:register' %}">signUp</a> 
+  {% endif %}
+  
+  
 
     {% if latest_question_list %}
-    <ul>
-    {% for question in latest_question_list %}
-  <li><a href="{% url 'polls:detail' question.id %}">
-    {{ question.question_text }}
-  </a></li>
- <small>asked by: {{ question.posted_by }}</small>
+{% for question in latest_question_list %}
+  <div class="post">
+  <p class="post_title" >
+  <a href="{% url 'polls:detail' question.id %}">   {{ question.question_text }}
+  </a>
+  </p>
+ 
+ {% for choice in question.highest_voted_choices %}
+<div class="majority">
+  <i class="bi bi-check-circle-fill"></i> {{ choice.choice_text }} 
+  - {{ choice.votes }}% </div>
+{% endfor %}
+
+<span class="pub_date">
+ asked: {{ question.pub_date }}
+ </span>
+ 
+
+ 
+  </div>
+ </a>
+{% endfor %}
     
-  <small>{% for choice in question.choice_set.all %}
-      <p>{{ choice.choice_text }} {{ choice.votes }}%</p>
-            {% endfor %}
-        </small>
+    
 
-
-
-        
-    {% endfor %}
-    </ul>
     {% else %}
-        <p>No polls are available.</p>
+    <p>No polls are available.</p>
+      <a href="{% url 'polls:questionPost' %}">
+        post a question 
+      </a>
+    {% endif %}
+
+<hr/>
 <a href="{% url 'polls:questionPost' %}">
   post a question 
 </a>
-    {% endif %}
+<style>
+*{box-sizing: border-box;font-family: Segoe UI;}
+.bi-check-circle-fill{
+  color: #10a725;
+}
+a{
+  text-decoration: none;
+  color: #393939;
+}
+.post{
+  display: flex;
+  flex-direction: column;
+  border-radius: 5px;
+  padding: 15px;
+  border: 1px solid #d7d7d7;
+  margin-bottom: 10px;
+}
 
+.post_title{
+  font-size: 18px;
+  font-weight: bolder;
+  font-family: Segoe UI;
+  text-decoration: none;
+  color: black;
+}
 
-<!-- polls/poll_list.html -
-
-{% for question in latest_question_list %}
-  <h1>{{ question.question_text }}</h1>
-  
-  <ul>
-    {% for choice in question.choice_set.all %}
- {% if choice.votes == latest_question_list.max_votes %}
-        <li>{{ choice.choice_text }} - {{ choice.votes }} votes</li>
-      {% endif %}
-    {% endfor %}
-  </ul>
-{% endfor %}
--->
-
-
+.vote_btn{
+  padding: 20px;
+  width: 100%;
+  background: #0f88d2;
+  text-align: center;
+  border-radius: 30px;
+  color: #fff;
+}
+.majority{
+  padding-bottom: 10px;
+}
+.pub_date{
+  padding: 10px 0px;
+  font-size: 12px;
+  float: right;
+}
+</style>
 
 </body>
 </html>
