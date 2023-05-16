@@ -7,7 +7,18 @@ from django.contrib.auth.models import User
 class QuestionForm(forms.ModelForm):
     class Meta:
       model = Question
-      fields = ['question_text']
+      fields = ['question_title', 'question_description']
+    def __init__(self, *args, **kwargs):
+      self.user = kwargs.pop("user", None)
+      super().__init__(*args, **kwargs)
+
+    def save(self, commit=True):
+      question = super().save(commit=False)
+      if self.user:
+          question.posted_by = self.user
+      if commit:
+          question.save()
+      return question
     
     
     

@@ -28,7 +28,6 @@ class IndexView(generic.ListView):
     template_name = "polls/index.html"
     context_object_name = "latest_question_list"
     
-
     def get_queryset(self):
         """
         Return the last five published questions (not including those set to be
@@ -49,7 +48,9 @@ class IndexView(generic.ListView):
 
 def poll_list(request):
     latest_question_list = Question.objects.annotate(max_votes=Max('choice__votes')).filter(choice__votes=F('max_votes'))
+    
     return render(request, 'polls/index.html', {'latest_question_list': latest_question_list})
+    
     
     def get_queryset(self):
         """
@@ -62,40 +63,51 @@ def poll_list(request):
 
 
 @login_required
-def poll_detail(request, question_id):
-    question = get_object_or_404(Question, pk=question_id)
-    choice_form = ChoiceForm(request.POST or None)
+def poll_detail(request, slug):
+    question = get_object_or_404(Question, slug=slug)
+    choice_form = None
+    has_existing_choice = Choice.objects.filter(question=question, user=request.user).exists()
 
-    if request.method == 'POST':
-        if choice_form.is_valid():
-            # Check if the user has already submitted a choice
-            existing_choice = Choice.objects.filter(
-                question=question, user=request.user
-            ).exists()
-            if existing_choice:
-                messages.error(request, "You have already submitted a choice.")
-            else:
+    if not has_existing_choice:
+        if request.method == 'POST':
+            choice_form = ChoiceForm(request.POST)
+            if choice_form.is_valid():
                 choice = choice_form.save(commit=False)
                 choice.question = question
                 choice.user = request.user
                 choice.save()
                 messages.success(request, "Choice added successfully.")
-                choice_form = ChoiceForm()  # Reset the form after saving the choice
+                return redirect('polls:detail', slug=question.slug)
         else:
-            selected_choice_id = request.POST.get('choice')
-            selected_choice = get_object_or_404(Choice, pk=selected_choice_id)
-            
-            # Check if the user has already upvoted the choice
-            existing_upvote = selected_choice.upvotes.filter(id=request.user.id).exists()
+            choice_form = ChoiceForm()
+
+    existing_choice = Choice.objects.filter(question=question, user=request.user).first()
+
+    if request.method == 'POST' and 'upvote' in request.POST:
+        if existing_choice:
+            existing_upvote = existing_choice.upvotes.filter(id=request.user.id).exists()
             if existing_upvote:
                 messages.error(request, "You have already upvoted this choice.")
             else:
-                selected_choice.upvotes.add(request.user)
-                selected_choice.votes += 1
-                selected_choice.save()
+                existing_choice.upvotes.add(request.user)
+                existing_choice.votes += 1
+                existing_choice.save()
                 messages.success(request, "Upvote recorded successfully.")
-                
-    
+
+    if request.method == 'POST' and 'downvote' in request.POST:
+        if existing_choice:
+            existing_downvote = existing_choice.downvotes.filter(id=request.user.id).exists()
+            if existing_downvote:
+                messages.error(request, "You have already downvoted this choice.")
+            else:
+                existing_choice.downvotes.add(request.user)
+                existing_choice.votes -= 1
+                existing_choice.save()
+                messages.success(request, "Downvote recorded successfully.")
+
+    question.views += 1
+    question.save()
+
     return render(request, 'polls/detail.html', {
         'question': question,
         'choice_form': choice_form,
@@ -112,7 +124,7 @@ class ResultsView(generic.DetailView):
     template_name = "polls/results.html"
 
 
-
+"""
 @login_required
 def vote(request, question_id):
     question = get_object_or_404(Question, pk=question_id)
@@ -135,32 +147,29 @@ def vote(request, question_id):
         # with POST data. This prevents data from being posted twice if a
         # user hits the Back button.
         return HttpResponseRedirect(reverse("polls:results", args=(question.id,)))
+"""       
         
-        
-        
-
 @login_required
 def questionPost(request):
     if request.method == 'POST':
-        question_form = QuestionForm(request.POST)
-        choice_form = ChoiceForm(request.POST)
-        
-        if question_form.is_valid():
-            question = question_form.save()
-            
-            if choice_form.is_valid():
-                choice = choice_form.save(commit=False)
-                choice.question = question
-                choice.user = request.user
-                choice.save()
-                return HttpResponseRedirect(reverse("polls:index"))
-                
-            # Redirect or do something else
-            
-    else:
-        question_form = QuestionForm()
-        choice_form = ChoiceForm()
-    
-    return render(request, 'polls/post.html', {'question_form': question_form, 'choice_form': choice_form})
+        question_form = QuestionForm(request.POST, user=request.user)
+        choice_forms = [ChoiceForm(request.POST, prefix=f'choice_form_{i}') for i in range(3)]
 
-	
+        if question_form.is_valid() and all([form.is_valid() for form in choice_forms]):
+            question = question_form.save()
+            for form in choice_forms:
+                choice = form.save(commit=False)
+                choice.question = question
+                choice.save()
+            messages.success(request, "Question and choices added successfully.")
+            return HttpResponseRedirect(reverse("polls:index"))
+        else:
+            messages.error(request, "Failed to add question and choices. Please check the form data.")
+    else:
+        question_form = QuestionForm(user=request.user)
+        choice_forms = [ChoiceForm(prefix=f'choice_form_{i}') for i in range(3)]
+
+    return render(request, 'polls/post.html', {
+        'question_form': question_form,
+        'choice_forms': choice_forms,
+    })

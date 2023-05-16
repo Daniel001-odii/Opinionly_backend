@@ -14,7 +14,10 @@
 <form method="post" action="{% url 'polls:questionPost' %}">
   {% csrf_token %}
   {{ question_form.as_p }}
-  {{ choice_form.as_p }}
+  <p>Choices:</p>
+  {% for choice_form in choice_forms %}
+    {{ choice_form.as_table }}
+  {% endfor %}
   <button type="submit">Submit</button>
 </form>
 

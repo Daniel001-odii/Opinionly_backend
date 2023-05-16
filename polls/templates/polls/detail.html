@@ -7,72 +7,69 @@
     <title>Document</title>
 </head>
 <body>
-<!--    <h1>
-       {{ question.question_text }}
-    </h1>
-    <ul>
-        {% for choice in question.choice_set.all %}
-  <li>{{ choice.choice_text }} <br/><small>
-    {{ choice.votes }}% likes this
-</small></li>
-        {% endfor %}
-    </ul>
--->
 
-    
-   <!-- <form action="{% url 'polls:vote' question.id %}" method="post">
-        {% csrf_token %}
-        <fieldset>
- <legend><h1>{{ question.question_text }}</h1></legend>
-            {% if error_message %}
- <p><strong>{{ error_message }}</strong></p>{% endif %}
-  {% for choice in question.choice_set.all %}
-  <input type="radio" name="choice" id="choice{{ forloop.counter }}" value="{{ choice.id }}">
-  <label for="choice{{ forloop.counter }}">
-    {{ choice.choice_text }} | 
-    {{ choice.votes }}% likes this
-  </label><br>
-            {% endfor %}
-        </fieldset>
- <input type="submit" value="Vote">
-    </form>-->
-    
     <a href="{% url 'polls:index' %}">home</a>
     
 <!-- polls/poll_detail.html -->
 
-<h1>{{ question.question_text }}</h1>
-
-<ul>
-  {% for choice in question.choice_set.all %}
-    <li>{{ choice.choice_text }} - {{ choice.votes }} vote{{ choice.votes|pluralize }} 
- <progress min="0" max="500" 
- value="{{ choice.votes }}">
- </progress>
- 
-      <form method="post" action="{% url 'polls:detail' question.id %}">
-        {% csrf_token %}
-        <input type="hidden" name="choice" value="{{ choice.id }}">
-        <button type="submit">Upvote</button>
-      </form>
-    </li>
-  {% endfor %}
-</ul>
 
 
 
-<!-- Add Choice Form -->
-<form method="post" action="{% url 'polls:detail' question.id %}">
-  {% csrf_token %}
-  {{ choice_form.as_p }}
-  <button type="submit">Add Choice</button>
-</form>
+
+
+
+
+
+
+<!-- polls/detail.html -->
+
+
+
+{% block content %}
+  <h1>{{ question.question_title }}</h1>
+  <p>{{ question.question_description }}</p>
+
+  {% if choice_form %}
+    <form method="post" action="{% url 'polls:detail' question.slug %}">
+      {% csrf_token %}
+      {{ choice_form.as_p }}
+      <button type="submit">Add Choice</button>
+    </form>
+  {% endif %}
+
+  {% if question.choice_set.all %}
+    <h2>Choices:</h2>
+    <ul>
+      {% for choice in question.choice_set.all %}
+        <li>
+          {{ choice.choice_text }}
+          <span>Upvotes: {{ choice.votes }}</span>
+          <form method="post" action="{% url 'polls:detail' question.slug %}">
+            {% csrf_token %}
+            <input type="hidden" name="choice_id" value="{{ choice.id }}">
+            <button type="submit" name="upvote">Upvote</button>
+            <button type="submit" name="downvote">Downvote</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endblock %}
+
+
+
+
+
 
 {% for message in messages %}
   <p>{{ message }}</p>
 {% endfor %}
 
 
+<p>want to join the poll?</p>
+<a href="{% url 'polls:questionPost' %}">
+  post a question 
+</a>
 
 
 </body>

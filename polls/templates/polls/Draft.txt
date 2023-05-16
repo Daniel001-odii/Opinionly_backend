@@ -1,0 +1,24 @@
+<!-- detail.html -
+
+<h1>{{ question.question_title }}</h1>
+<p>{{ question.question_description }}</p>
+
+<h3>Choices:</h3>
+{% for choice in question.choice_set.all %}
+  <p>{{ choice.choice_text }}</p>
+
+  <form method="post" action="{% url 'polls:detail' question.id %}">
+    {% csrf_token %}
+    <input type="hidden" name="choice" value="{{ choice.id }}">
+    <button type="submit" name="upvote">Upvote</button>
+    <button type="submit" name="downvote">Downvote</button>
+  </form>
+{% endfor %}
+
+<h3>Add a Choice:</h3>
+<form method="post" action="{% url 'polls:detail' question.id %}">
+  {% csrf_token %}
+  {{ choice_form.as_table }}
+  <button type="submit">Submit</button>
+</form>
+-->
